@@ -1,4 +1,239 @@
-html {
-  height: 100%;
+body {
+  margin: 0;
+  font-family: 'Cairo', sans-serif;
+  background: #3A2316;
+  background: linear-gradient(#3A2316, #1F120A);
+  color: white;
+  direction: rtl;
+  min-height: 100vh;
+}
+
+.loading-screen {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #3A2316;
+  background: linear-gradient(#3A2316, #1F120A);
+}
+
+.logo {
+  width: 150px !important;
+  height: 150px !important;
+  object-fit: contain;
+}
+
+.loading-screen p {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  margin-top: 20px;
+}
+
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #3A2316;
+  background: linear-gradient(#3A2316, #1F120A);
+}
+
+.content {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.counter {
+  background: #2A1B10;
+  padding: 15px;
+  border-radius: 15px;
+  margin: 20px auto;
+  width: 80%;
+  font-size: 1.2rem;
+  color: white;
+  text-align: center;
+  border: 1px solid #D4A373;
+}
+
+.tap-btn {
+  background: url('https://i.postimg.cc/nM9Kmdn3/coin.png') no-repeat center/cover;
+  width: 150px !important;
+  height: 150px !important;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  margin: 30px auto;
+  display: block;
+}
+
+.tap-btn.spinning {
+  animation: spin 10s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.navbar {
+  background: #2A1B10;
+  padding: 10px;
   width: 100%;
+  display: flex;
+  justify-content: space-around;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  position: fixed;
+  bottom: 0;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.nav-btn:hover {
+  transform: scale(1.1);
+}
+
+.nav-icon {
+  width: 40px !important;
+  height: 40px !important;
+  object-fit: contain;
+}
+
+.refer-container {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 70px);
+}
+
+.refer-left, .refer-right {
+  width: 50%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.refer-box {
+  background: rgba(212, 163, 115, 0.3);
+  padding: 15px;
+  border-radius: 15px;
+  text-align: center;
+  width: 80%;
+}
+
+.refer-box img {
+  width: 50px !important;
+  height: 50px !important;
+  object-fit: contain;
+}
+
+.refer-link {
+  margin-top: 20px;
+}
+
+.refer-link input {
+  width: 80%;
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  background: #fff;
+  color: #333;
+  font-size: 1rem;
+}
+
+.refer-link img {
+  width: 40px !important;
+  height: 40px !important;
+  cursor: pointer;
+  object-fit: contain;
+}
+
+.friends-list {
+  background: rgba(212, 163, 115, 0.3);
+  padding: 15px;
+  border-radius: 15px;
+  width: 80%;
+  text-align: center;
+}
+
+.task-section, .tasks-container {
+  margin: 20px 0;
+}
+
+.task-section h2, .tasks-container h3 {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+}
+
+.task {
+  display: flex;
+  align-items: center;
+  background: rgba(212, 163, 115, 0.3);
+  padding: 10px;
+  border-radius: 10px;
+  margin: 10px 0;
+}
+
+.task img {
+  width: 30px !important;
+  height: 30px !important;
+  margin-left: 10px;
+  object-fit: contain;
+}
+
+.task p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.task button {
+  background: #D4A373;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.stake-container, .wallet-container {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.stake-container p, .wallet-container p {
+  font-size: 1.1rem;
+  margin: 10px 0;
+}
+
+.stake-container input, .wallet-container input {
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  width: 80%;
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.stake-container button, .wallet-container button {
+  background: #D4A373;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+button:not(.tap-btn):hover {
+  background: #b88b5e;
 }
