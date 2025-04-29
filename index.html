@@ -80,6 +80,11 @@
             animation: spin 10s linear infinite;
         }
 
+        .tap-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -245,6 +250,39 @@
         button:not(.tap-btn):hover {
             background: #b88b5e;
         }
+
+        #popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #2A1B10;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #D4A373;
+            z-index: 1000;
+            text-align: center;
+            color: white;
+        }
+
+        #popup p {
+            margin: 0 0 15px;
+            font-size: 1.1rem;
+        }
+
+        #popup button {
+            background: #D4A373;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #popup button:hover {
+            background: #b88b5e;
+        }
     </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
@@ -272,6 +310,10 @@
                 <img src="https://i.postimg.cc/KRJY82Cw/wallet.png" alt="محفظة" class="nav-icon" onerror="this.src='https://via.placeholder.com/40'">
             </button>
         </div>
+    </div>
+    <div id="popup">
+        <p id="popupMessage"></p>
+        <button onclick="closePopup()">إغلاق</button>
     </div>
     <script src="script.js"></script>
 </body>

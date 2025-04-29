@@ -1,62 +1,244 @@
-const apiUrl = 'http://144.126.201.180:3000';
-const tg = window.Telegram.WebApp;
-tg.ready();
-const telegramId = tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id.toString() : 'test_user';
-let user = {
-    balance: 0,
-    dailyMined: 0,
-    maxDaily: 1,
-    referrals: 0
-};
-
-// إخفاء شاشة التحميل
-function hideLoading() {
-    console.log('Hiding loading screen...');
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('main-container').style.display = 'block';
-}
-
-// عرض رسالة
 function showMessage(message) {
-    console.log('Message:', message);
-    tg.showAlert(message);
+    const popup = document.getElementById('popup');
+    const popupMessage = document.getElementById('popupMessage');
+    popupMessage.textContent = message;
+    popup.style.display = 'block';
 }
 
-// تحميل بيانات المستخدم
+function closePopup() {
+    document.getElementById('popup').style.display = 'none';
+}
+
 async function initUser() {
     try {
-        console.log('Fetching user data for telegramId:', telegramId);
-        const response = await fetch(`${apiUrl}/user/${telegramId}`);
+        const telegramId = window.Telegram.WebApp.initDataUnsafe.user?.id?.toString() || 'test_user';
+        console.log('جارٍ جلب بيانات المستخدم لـ:', telegramId);
+        const response = await fetch(`http://144.126.201.180/user/${telegramId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        if (!response.ok) {
+            console.error('خطأ في استجابة /user:', response.status, response.statusText);
+            throw new Error('Network response was not ok');
+        }
         const data = await response.json();
-        console.log('User data:', data);
+        console.log('البيانات المستلمة:', data);
         if (data.success) {
-            user.balance = data.balance || 0;
-            user.dailyMined = data.dailyMined || 0;
-            user.maxDaily = data.maxDaily || 1;
-            user.referrals = data.referrals || 0;
+            user.balance = data.balance;
+            user.dailyMined = data.dailyMined;
+            user.maxDaily = data.maxDaily;
+            user.referrals = data.referrals;
             showSection('mine');
         } else {
+            console.error('فشل استرجاع البيانات:', data.message);
             showMessage(data.message || 'خطأ في استرجاع البيانات');
+            showSection('mine');
         }
     } catch (error) {
-        console.error('Init user error:', error);
-        showMessage('خطأ في استرجاع البيانات');
+        console.error('خطأ في initUser:', error);
+        showMessage('حدث خطأ أثناء التهيئة. تحقق من اتصال الشبكة.');
+        showSection('mine');
     }
 }
 
-// عرض القسم المحدد
+async function tapMine() {
+    try {
+        const telegramId = window.Telegram.WebApp.initDataUnsafe.user?.id?.toString() || 'test_user';
+        console.log('جارٍ التعدين لـ:', telegramId);
+        const response = await fetch('http://144.126.201.180/mine', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telegramId })
+        });
+        if (!response.ok) {
+            console.error('خطأ في استجابة /mine:', response.status, response.statusText);
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        console.log('استجابة التعدين:', data);
+        if (data.success) {
+            user.dailyMined = data.dailyMined;
+            user.balance = data.balance;
+            document.querySelector('.counter').innerText = `تم تعدين اليوم: ${user.dailyMined.toFixed(0)} / ${user.maxDaily.toFixed(0)} DRM`;
+            const tapBtn = document.querySelector('.tap-btn');
+            tapBtn.classList.add('spinning');
+            setTimeout(() => tapBtn.classList.remove('spinning'), 10000);
+            tapBtn.disabled = true;
+            showMessage('تم التعدين بنجاح! لقد حصلت على 1 DRM لهذا اليوم.');
+            showSection('mine');
+        } else {
+            showMessage(data.message || 'خطأ أثناء التعدين');
+        }
+    } catch (error) {
+        console.error('خطأ في tapMine:', error);
+        showMessage('حدث خطأ أثناء التعدين. تحقق من اتصال الشبكة.');
+    }
+}
+
+async function claimGift() {
+    try {
+        const telegramId = window.Telegram.WebApp.initDataUnsafe.user?.id?.toString() || 'test_user';
+        console.log('جارٍ استلام الهدية لـ:', telegramId);
+        const response = await fetch('http://144.126.201.180/claimGift', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telegramId })
+        });
+        if (!response.ok) {
+            console.error('خطأ في استجابة /claimGift:', response.status, response.statusText);
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        console.log('استجابة استلام الهدية:', data);
+        if (data.success) {
+            user.balance = data.balance;
+            showMessage('تم استلام الهدية الترحيبية: 2 DRM!');
+        } else {
+            showMessage(data.message || 'خطأ في استلام الهدية');
+        }
+    } catch (error) {
+        console.error('خطأ في claimGift:', error);
+        showMessage('حدث خطأ أثناء استلام الهدية. تحقق من اتصال الشبكة.');
+    }
+}
+
+async function referFriend() {
+    try {
+        const telegramId = window.Telegram.WebApp.initDataUnsafe.user?.id?.toString() || 'test_user';
+        const refereeId = prompt('أدخل معرف Telegram للشخص المحال:');
+        if (refereeId) {
+            console.log('جارٍ إحالة صديق:', { referrerId: telegramId, refereeId });
+            const response = await fetch('http://144.126.201.180/refer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ referrerId: telegramId, refereeId })
+            });
+            if (!response.ok) {
+                console.error('خطأ في استجابة /refer:', response.status, response.statusText);
+                throw new Error('Network response was not ok');
+            }
+            const data = await response.json();
+            console.log('استجابة الإحالة:', data);
+            if (data.success) {
+                user.referrals += 1;
+                user.maxDaily = data.maxDaily;
+                showMessage('تمت الإحالة بنجاح! مكافأتك: 0.5 DRM');
+                showSection('refer');
+            } else {
+                showMessage(data.message || 'خطأ في الإحالة');
+            }
+        }
+    } catch (error) {
+        console.error('خطأ في referFriend:', error);
+        showMessage('حدث خطأ أثناء الإحالة. تحقق من اتصال الشبكة.');
+    }
+}
+
+async function completeTask(taskType) {
+    try {
+        const telegramId = window.Telegram.WebApp.initDataUnsafe.user?.id?.toString() || 'test_user';
+        console.log('جارٍ إكمال المهمة:', taskType, 'لـ:', telegramId);
+        const response = await fetch('http://144.126.201.180/task', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telegramId, taskType })
+        });
+        if (!response.ok) {
+            console.error('خطأ في استجابة /task:', response.status, response.statusText);
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        console.log('استجابة إكمال المهمة:', data);
+        if (data.success) {
+            user.balance = data.balance;
+            showMessage(`تم إكمال المهمة '${taskType}' بنجاح! تمت إضافة المكافأة إلى رصيدك.`);
+            showSection('earn');
+        } else {
+            showMessage(data.message || 'خطأ في إكمال المهمة');
+        }
+    } catch (error) {
+        console.error('خطأ في completeTask:', error);
+        showMessage('حدث خطأ أثناء إكمال المهمة. تحقق من اتصال الشبكة.');
+    }
+}
+
+async function stake() {
+    try {
+        const telegramId = window.Telegram.WebApp.initDataUnsafe.user?.id?.toString() || 'test_user';
+        const amount = document.getElementById('stakeAmount').value;
+        if (!amount || amount <= 0) {
+            showMessage('يرجى إدخال كمية صالحة للستيكينغ!');
+            return;
+        }
+        console.log('جارٍ الستيكينغ:', amount, 'لـ:', telegramId);
+        const response = await fetch('http://144.126.201.180/stake', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telegramId, amount })
+        });
+        if (!response.ok) {
+            console.error('خطأ في استجابة /stake:', response.status, response.statusText);
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        console.log('استجابة الستيكينغ:', data);
+        if (data.success) {
+            user.balance = data.balance;
+            showMessage(`تم الستيكينغ بنجاح! الكمية: ${amount} DRM`);
+            showSection('stake');
+        } else {
+            showMessage(data.message || 'خطأ في الستيكينغ');
+        }
+    } catch (error) {
+        console.error('خطأ في stake:', error);
+        showMessage('حدث خطأ أثناء الستيكينغ. تحقق من اتصال الشبكة.');
+    }
+}
+
+async function withdraw() {
+    try {
+        const telegramId = window.Telegram.WebApp.initDataUnsafe.user?.id?.toString() || 'test_user';
+        const amount = document.getElementById('withdrawAmount').value;
+        if (!amount || amount <= 0) {
+            showMessage('يرجى إدخل كمية صالحة للسحب!');
+            return;
+        }
+        console.log('جارٍ السحب:', amount, 'لـ:', telegramId);
+        const response = await fetch('http://144.126.201.180/withdraw', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telegramId, amount })
+        });
+        if (!response.ok) {
+            console.error('خطأ في استجابة /withdraw:', response.status, response.statusText);
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        console.log('استجابة السحب:', data);
+        if (data.success) {
+            user.balance = data.balance;
+            showMessage(`تم السحب بنجاح! الكمية: ${amount} DRM`);
+            showSection('wallet');
+        } else {
+            showMessage(data.message || 'خطأ في السحب');
+        }
+    } catch (error) {
+        console.error('خطأ في withdraw:', error);
+        showMessage('حدث خطأ أثناء السحب. تحقق من اتصال الشبكة.');
+    }
+}
+
 function showSection(section) {
-    console.log('Showing section:', section);
     const content = document.getElementById('content');
     content.innerHTML = '';
-
     switch (section) {
         case 'mine':
+            const isMiningDisabled = user.dailyMined >= user.maxDaily;
             content.innerHTML = `
                 <div class="counter">
-                    تم تعدين اليوم: ${user.dailyMined.toFixed(2)} / ${user.maxDaily.toFixed(2)} DRM
+                    تم تعدين اليوم: ${user.dailyMined.toFixed(0)} / ${user.maxDaily.toFixed(0)} DRM
                 </div>
-                <button class="tap-btn" onclick="tapMine()"></button>
+                <button class="tap-btn" onclick="tapMine()" ${isMiningDisabled ? 'disabled' : ''}></button>
                 <button onclick="claimGift()">استلم هديتك (2 DRM)</button>
             `;
             break;
@@ -65,38 +247,14 @@ function showSection(section) {
                 <div class="tasks-container">
                     <h3>المهام المتاحة</h3>
                     <div class="task">
-                        <img src="https://i.postimg.cc/mh3DKMjb/tasks.png" alt="مهمة" onerror="this.src='https://via.placeholder.com/30'">
+                        <img src="https://i.postimg.cc/mh3DKMjb/tasks.png" alt="مهمة">
                         <p>أكمل مهمة يومية (مكافأة: 0.2 DRM)</p>
                         <button onclick="completeTask('daily')">أكمل المهمة</button>
                     </div>
                     <div class="task">
-                        <img src="https://i.postimg.cc/mh3DKMjb/tasks.png" alt="مهمة" onerror="this.src='https://via.placeholder.com/30'">
+                        <img src="https://i.postimg.cc/mh3DKMjb/tasks.png" alt="مهمة">
                         <p>أكمل مهمة شريك (مكافأة: 0.5 DRM)</p>
                         <button onclick="completeTask('partner')">أكمل المهمة</button>
-                    </div>
-                </div>
-            `;
-            break;
-        case 'refer':
-            const referLink = `https://t.me/DirhamBot?start=ref${telegramId}`;
-            content.innerHTML = `
-                <div class="refer-container">
-                    <div class="refer-left">
-                        <div class="refer-box">
-                            <img src="https://telegram.org/img/t_logo.png" alt="تلغرام" onerror="this.src='https://via.placeholder.com/50'">
-                            <p>ادعِ أصدقاءك واربح 0.5 DRM + 10% زيادة تعدين</p>
-                        </div>
-                        <div class="refer-link">
-                            <input type="text" value="${referLink}" readonly>
-                            <img src="https://i.postimg.cc/Wdz1Dyv3/link.png" alt="رابط" onclick="copyReferLink('${referLink}')" onerror="this.src='https://via.placeholder.com/40'">
-                        </div>
-                    </div>
-                    <div class="refer-right">
-                        <div class="friends-list">
-                            <h3>الأصدقاء المحالون</h3>
-                            <p>عدد الأصدقاء: ${user.referrals}</p>
-                            <p>حد التعدين اليومي: ${user.maxDaily.toFixed(2)} DRM</p>
-                        </div>
                     </div>
                 </div>
             `;
@@ -121,165 +279,58 @@ function showSection(section) {
                 </div>
             `;
             break;
+        case 'refer':
+            const referLink = window.Telegram.WebApp.initDataUnsafe.user
+                ? `https://t.me/DirhamBot?start=ref${window.Telegram.WebApp.initDataUnsafe.user.id}`
+                : 'https://t.me/DirhamBot?start=ref12345';
+            content.innerHTML = `
+                <div class="refer-container">
+                    <div class="refer-left">
+                        <div class="refer-box">
+                            <img src="https://telegram.org/img/t_logo.png" alt="تلغرام">
+                            <p>ادعِ أصدقاءك واربح 0.5 DRM + 10% زيادة تعدين</p>
+                            <button onclick="referFriend()">إحالة صديق</button>
+                        </div>
+                        <div class="refer-link">
+                            <input type="text" value="${referLink}" readonly>
+                            <img src="https://i.postimg.cc/Wdz1Dyv3/link.png" alt="نسخ" onclick="copyReferLink('${referLink}')">
+                        </div>
+                    </div>
+                    <div class="refer-right">
+                        <div class="friends-list">
+                            <h3>الأصدقاء المحالون</h3>
+                            <p>عدد الأصدقاء: ${user.referrals}</p>
+                            <p>حد التعدين اليومي: ${user.maxDaily.toFixed(0)} DRM</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            break;
     }
 }
 
-// التعدين
-async function tapMine() {
-    if (user.dailyMined >= user.maxDaily) {
-        showMessage('لقد وصلت إلى الحد الأقصى للتعدين اليومي!');
-        return;
-    }
-    const tapBtn = document.querySelector('.tap-btn');
-    tapBtn.classList.add('spinning');
-    try {
-        console.log('Mining for telegramId:', telegramId);
-        const response = await fetch(`${apiUrl}/mine`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegramId })
-        });
-        const data = await response.json();
-        console.log('Mine response:', data);
-        if (data.success) {
-            user.balance = data.balance;
-            user.dailyMined = data.dailyMined;
-            user.maxDaily = data.maxDaily;
-            showMessage('تم التعدين بنجاح!');
-            showSection('mine');
-        } else {
-            showMessage(data.message);
-        }
-    } catch (error) {
-        console.error('Mine error:', error);
-        showMessage('خطأ أثناء التعدين');
-    } finally {
-        setTimeout(() => tapBtn.classList.remove('spinning'), 10000);
-    }
-}
-
-// استلام الهدية الترحيبية
-async function claimGift() {
-    try {
-        console.log('Claiming gift for telegramId:', telegramId);
-        const response = await fetch(`${apiUrl}/claimGift`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegramId })
-        });
-        const data = await response.json();
-        console.log('Claim gift response:', data);
-        if (data.success) {
-            user.balance = data.balance;
-            showMessage('تم استلام الهدية الترحيبية: 2 DRM!');
-            showSection('mine');
-        } else {
-            showMessage(data.message);
-        }
-    } catch (error) {
-        console.error('Claim gift error:', error);
-        showMessage('خطأ أثناء استلام الهدية');
-    }
-}
-
-// إكمال المهام
-async function completeTask(taskType) {
-    try {
-        console.log('Completing task:', taskType, 'for telegramId:', telegramId);
-        const response = await fetch(`${apiUrl}/completeTask`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegramId, taskType })
-        });
-        const data = await response.json();
-        console.log('Complete task response:', data);
-        if (data.success) {
-            user.balance = data.balance;
-            showMessage(`تم إكمال المهمة '${taskType}' بنجاح!`);
-            showSection('earn');
-        } else {
-            showMessage(data.message);
-        }
-    } catch (error) {
-        console.error('Complete task error:', error);
-        showMessage('خطأ أثناء إكمال المهمة');
-    }
-}
-
-// نسخ رابط الإحالة
 function copyReferLink(link) {
     navigator.clipboard.writeText(link).then(() => {
         showMessage('تم نسخ رابط الإحالة!');
-    }).catch(err => {
-        console.error('Copy link error:', err);
-        showMessage('خطأ أثناء نسخ الرابط');
     });
 }
 
-// الستيكينغ
-async function stake() {
-    const amount = document.getElementById('stakeAmount').value;
-    if (!amount || amount <= 0) {
-        showMessage('يرجى إدخل كمية صالحة للستيكينغ!');
-        return;
+window.onload = function () {
+    console.log('بدء التحميل...');
+    if (window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
     }
-    try {
-        console.log('Staking amount:', amount, 'for telegramId:', telegramId);
-        const response = await fetch(`${apiUrl}/stake`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegramId, amount })
-        });
-        const data = await response.json();
-        console.log('Stake response:', data);
-        if (data.success) {
-            user.balance = data.balance;
-            showMessage(`تم الستيكينغ بنجاح! الكمية: ${amount} DRM`);
-            showSection('stake');
-        } else {
-            showMessage(data.message);
-        }
-    } catch (error) {
-        console.error('Stake error:', error);
-        showMessage('خطأ أثناء الستيكينغ');
-    }
-}
-
-// السحب
-async function withdraw() {
-    const amount = document.getElementById('withdrawAmount').value;
-    if (!amount || amount <= 0) {
-        showMessage('يرجى إدخل كمية صالحة للسحب!');
-        return;
-    }
-    try {
-        console.log('Withdrawing amount:', amount, 'for telegramId:', telegramId);
-        const response = await fetch(`${apiUrl}/withdraw`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegramId, amount })
-        });
-        const data = await response.json();
-        console.log('Withdraw response:', data);
-        if (data.success) {
-            user.balance = data.balance;
-            showMessage(`تم السحب بنجاح! الكمية: ${amount} DRM`);
-            showSection('wallet');
-        } else {
-            showMessage(data.message);
-        }
-    } catch (error) {
-        console.error('Withdraw error:', error);
-        showMessage('خطأ أثناء السحب');
-    }
-}
-
-// تهيئة التطبيق
-window.onload = function() {
-    console.log('App loading...');
     setTimeout(() => {
-        console.log('App loaded, initializing user...');
-        hideLoading();
+        console.log('انتهى التحميل، تشغيل initUser...');
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('main-container').style.display = 'block';
         initUser();
-    }, 3000);
+    }, 500);
+};
+
+let user = {
+    balance: 0,
+    dailyMined: 0,
+    maxDaily: 1,
+    referrals: 0
 };
